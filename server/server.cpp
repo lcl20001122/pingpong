@@ -13,10 +13,11 @@ CRITICAL_SECTION g_cs;
 std::mutex mtx;
 VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 {
+	SocketContext *sock=(SocketContext*)lpParam;
 	printf("Timer routine called.\n");
     if(TimerOrWaitFired)
     {
-        printf("The wait timed out and Send data.\n");
+        printf("The wait timed out and Send data to %d.\n",sock->connSocket);
     }
     else
     {
@@ -364,7 +365,7 @@ BOOL IOCPBase::DoAccpet(SocketContext * sockContext, IOContext * ioContext)
 
 	OnConnectionEstablished(newSockContext);
 
-	// 5. 建立recv操作所需的ioContext，在新连接的socket上投递recv请求,投递send请求
+	// 5. 建立send操作所需的ioContext，在新连接的socket上投递send请求
 	IOContext *newIoContext = newSockContext->GetNewIOContext();
 	//newIoContext->ioType = RECV_POSTED;
 	newIoContext->ioType = SEND_POSTED;
@@ -392,7 +393,7 @@ BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
 	
 	
 
-	HANDLE hTimer = NULL;
+	/*HANDLE hTimer = NULL;
     HANDLE hTimerQueue = NULL;
     
 
@@ -424,7 +425,10 @@ BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
 
     // TODO: Do other useful work here 
 
-    printf("Call timer routine in 1 seconds...\n");
+    printf("Call timer routine in 1 seconds...\n");*/
+	if (WaitForSingleObject(gDoneEvent, INFINITE) != WAIT_OBJECT_0)
+        printf("WaitForSingleObject failed (%d)\n", GetLastError());
+
 
 	if (false == PostSend(sockContext, ioContext))
 	{
@@ -435,15 +439,15 @@ BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
     // Wait for the timer-queue thread to complete using an event 
     // object. The thread will signal the event at that time.
 
-    if (WaitForSingleObject(gDoneEvent, INFINITE) != WAIT_OBJECT_0)
-        printf("WaitForSingleObject failed (%d)\n", GetLastError());
+    /*if (WaitForSingleObject(gDoneEvent, INFINITE) != WAIT_OBJECT_0)
+        printf("WaitForSingleObject failed (%d)\n", GetLastError());*/
 
-	mtx.lock();
+	/*mtx.lock();
     CloseHandle(gDoneEvent);
-	mtx.unlock();
+	mtx.unlock();*/
     // Delete all timers in the timer queue.
-    if (!DeleteTimerQueue(hTimerQueue))
-        printf("DeleteTimerQueue failed (%d)\n", GetLastError());
+    /*if (!DeleteTimerQueue(hTimerQueue))
+        printf("DeleteTimerQueue failed (%d)\n", GetLastError());*/
 
 	
 	return true;
@@ -541,8 +545,55 @@ DWORD IOCPBase::WorkerThreadProc(LPVOID lpParam)
 					iocp->DoAccpet(sockContext, ioContext);
 					break;
 				case RECV_POSTED:
+				{
+					if(!strcmp(ioContext->wsaBuf.buf,"pong"))
+					{
+					HANDLE hTimer = NULL;
+    				HANDLE hTimerQueue = NULL;
+
+   					// Use an event object to track the TimerRoutine execution
+					
+    				gDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+					
+    				if (NULL == gDoneEvent)
+    				{
+        				printf("CreateEvent failed (%d)\n", GetLastError());
+        				return 1;
+    				}
+
+    				// Create the timer queue.
+    				hTimerQueue = CreateTimerQueue();
+    				if (NULL == hTimerQueue)
+    				{
+        				printf("CreateTimerQueue failed (%d)\n", GetLastError());
+        				return 2;
+    					}
+
+    				// Set a timer to call the timer routine in 10 seconds.
+					
+   					if (!CreateTimerQueueTimer( &hTimer, hTimerQueue, 
+            			(WAITORTIMERCALLBACK)TimerRoutine, sockContext , 1000, 0, 0))
+    				{
+        				printf("CreateTimerQueueTimer failed (%d)\n", GetLastError());
+        				return 3;
+    				}
+
+    				// TODO: Do other useful work here 
+					printf("Call timer routine in 1 seconds...\n");
+    					
 					iocp->DoRecv(sockContext, ioContext);
+
+					if (!DeleteTimerQueue(hTimerQueue))
+        				printf("DeleteTimerQueue failed (%d)\n", GetLastError());
 					break;
+					}else
+					{
+						break;
+					}
+
+				}
+					/*iocp->DoRecv(sockContext, ioContext);
+					break;*/
 				case SEND_POSTED:
 					iocp->DoSend(sockContext, ioContext);
 					break;

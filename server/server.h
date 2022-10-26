@@ -26,7 +26,7 @@ using std::wstring;
 
 #define BUFF_SIZE (1024*4)						// I/O 请求的缓冲区大小
 #define WORKER_THREADS_PER_PROCESSOR (2)		// 每个处理器上的线程数
-#define MAX_POST_ACCEPT (10)					// 同时投递的Accept数量
+#define MAX_POST_ACCEPT (100000)					// 同时投递的Accept数量
 #define INIT_IOCONTEXT_NUM (100)				// IOContextPool中的初始数量
 #define EXIT_CODE	(-1)						// 传递给Worker线程的退出信号
 #define DEFAULT_IP	(L"127.0.0.1")				// 默认IP地址

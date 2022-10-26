@@ -1,17 +1,20 @@
 #include"client.h"
 SOCKET hSocket;
 SOCKADDR_IN servAdr;
+
 HANDLE hConnEvent;
 HANDLE hWorkEvent;
-std::queue<SOCKET> q;
+std::mutex mtx;
+std::vector<SOCKET> v;
 DWORD WINAPI _ConnectionThread(LPVOID lpParam)
 {
-    int ThreadNum=2;
+    int ThreadNum=5;
 
     
    
     for(int i=0;i<ThreadNum;i++)
     {
+        ResetEvent(hConnEvent);
         hSocket=socket(AF_INET,SOCK_STREAM,0);
         memset(&servAdr,0,sizeof(servAdr));
         servAdr.sin_family=AF_INET;
@@ -20,11 +23,12 @@ DWORD WINAPI _ConnectionThread(LPVOID lpParam)
 
 
         if(connect(hSocket,(SOCKADDR*)&servAdr,sizeof(servAdr))==SOCKET_ERROR)
-            std::cout<<"connect error!"<<std::endl;
+            std::cout<<"connect error!"<<WSAGetLastError()<<std::endl;
         else
         {
             std::cout<<"client:"<<i<<"connected..."<<std::endl;
-             q.push(hSocket);
+             v.push_back(hSocket);
+             SetEvent(hConnEvent);
             //CreateThread(NULL,0,_WorkerThread,&hSocket,0,NULL);
             
         }
@@ -32,17 +36,18 @@ DWORD WINAPI _ConnectionThread(LPVOID lpParam)
 
         
     }
-    SetEvent(hConnEvent);
+    
     
     
     return 0;
 
 }
-DWORD WINAPI _WorkerThread(LPVOID lpParam)
+/*DWORD WINAPI _WorkerThread(LPVOID lpParam)
 {
     SOCKET *sock =(SOCKET*)lpParam;
     
     
+
     char recvbuf[1024];
     while(1)
         {
@@ -55,7 +60,10 @@ DWORD WINAPI _WorkerThread(LPVOID lpParam)
 		    }
             std::cout<<"server:"<<recvbuf<<std::endl;
             
-            send(*sock,"pong",5,0);
+            if(send(*sock,"pong",5,0))
+            {
+                std::cout<<"send over"<<std::endl;
+            }
             
             //send(hSocket,"pong",5,0);
             if (nRet == SOCKET_ERROR)
@@ -65,11 +73,11 @@ DWORD WINAPI _WorkerThread(LPVOID lpParam)
 			    break;
 		    }
             
-        }
+        } 
         SetEvent(hWorkEvent);
         return 0;
         
-}
+}*/
 void init()
 {
     char recvbuf[BUF_SIZE];
@@ -95,12 +103,41 @@ void init()
    
     CreateThread(NULL,0,_ConnectionThread,0,0,NULL);
     WaitForSingleObject(hConnEvent, INFINITE);
-    while(!q.empty())
+
+
+    while(1)
     {
-        SOCKET s=q.front();
-        q.pop();
-        CreateThread(NULL,0,_WorkerThread,&s,0,NULL);
+        for(int i=0;i<v.size();i++)
+        {
+             char recvbuf[1024];
+
+            int nRet=recv(v[i],recvbuf,sizeof(recvbuf),0);
+            if (nRet == SOCKET_ERROR)
+		    { 
+			    int nErr = WSAGetLastError();
+			    std::cout << "SOCKET_ERROR:"<<std::endl;
+			    break;
+		    }
+            std::cout<<"server:"<<recvbuf<<std::endl;
+            
+            if(send(v[i],"pong",5,0))
+            {
+                std::cout<<"send over"<<std::endl;
+            }
+            
+            //send(hSocket,"pong",5,0);
+            if (nRet == SOCKET_ERROR)
+		    { 
+			    int nErr = WSAGetLastError();
+			    std::cout << "SOCKET_ERROR:"<<std::endl;
+			    break;
+		    }
+        }
     }
+    
+  
+    
+    
     
     WaitForSingleObject(hWorkEvent, INFINITE);
     

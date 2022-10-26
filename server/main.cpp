@@ -12,7 +12,7 @@ public:
 	{
 		SYSTEMTIME sys;
 		GetLocalTime(&sys);
-		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:Accept a connection,Current connects:%d\n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, GetConnectCnt());
+		printf("%02d:%02d:%02d.%03d:Accept a connection,Current connects:%d\n",sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, GetConnectCnt());
 	}
 
 	// 连接关闭
@@ -20,7 +20,7 @@ public:
 	{
 		SYSTEMTIME sys;
 		GetLocalTime(&sys);
-		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:A connection had closed,Current connects:%d\n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, GetConnectCnt());
+		printf("%02d:%02d:%02d.%03d:A connection had closed,Current connects:%d\n",sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, GetConnectCnt());
 	}
 
 	// 连接上发生错误
@@ -28,7 +28,7 @@ public:
 	{
 		SYSTEMTIME sys;
 		GetLocalTime(&sys);
-		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:A connection erro: %d,Current connects:%d\n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, error, GetConnectCnt());
+		printf("%02d:%02d:%02d.%03d:A connection erro: %d,Current connects:%d\n",sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, error, GetConnectCnt());
 	}
 
 	// 读操作完成
@@ -36,15 +36,17 @@ public:
 	{
 		SYSTEMTIME sys;
 		GetLocalTime(&sys);
-		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:Recv data: %s from client :%d \n", 
-		sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, ioContext->wsaBuf.buf,sockContext->connSocket);
+		printf("%02d:%02d:%02d.%03d:Recv data: %s from client :%d \n", 
+		sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, ioContext->wsaBuf.buf,sockContext->connSocket);
 	}
 	// 写操作完成
 	void OnSendCompleted(SocketContext *sockContext, IOContext *ioContext)
 	{
 		SYSTEMTIME sys;
 		GetLocalTime(&sys);
-		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:Send data successd!\n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
+		printf("%02d:%02d:%02d.%03d:Send data successd to client:%d \n",sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds,sockContext->connSocket);
+		
+		
 	}
 
 };
