@@ -10,6 +10,7 @@ IOContextPool SocketContext::ioContextPool;		// 初始化
 
 HANDLE gDoneEvent;
 CRITICAL_SECTION g_cs;
+std::mutex mtx;
 VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 {
 	printf("Timer routine called.\n");
@@ -21,8 +22,9 @@ VOID CALLBACK TimerRoutine(PVOID lpParam, BOOLEAN TimerOrWaitFired)
     {
         printf("The wait event was signaled.\n");
     }
-    
+    mtx.lock();
     SetEvent(gDoneEvent);
+	mtx.unlock();
 }
 
 IOCPBase::IOCPBase() :
@@ -395,7 +397,9 @@ BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
     
 
     // Use an event object to track the TimerRoutine execution
+	mtx.lock();
     gDoneEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	mtx.unlock();
     if (NULL == gDoneEvent)
     {
         printf("CreateEvent failed (%d)\n", GetLastError());
@@ -434,9 +438,9 @@ BOOL IOCPBase::DoRecv(SocketContext * sockContext, IOContext * ioContext)
     if (WaitForSingleObject(gDoneEvent, INFINITE) != WAIT_OBJECT_0)
         printf("WaitForSingleObject failed (%d)\n", GetLastError());
 
-	
+	mtx.lock();
     CloseHandle(gDoneEvent);
-	
+	mtx.unlock();
     // Delete all timers in the timer queue.
     if (!DeleteTimerQueue(hTimerQueue))
         printf("DeleteTimerQueue failed (%d)\n", GetLastError());

@@ -36,7 +36,8 @@ public:
 	{
 		SYSTEMTIME sys;
 		GetLocalTime(&sys);
-		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:Recv data: %s \n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, ioContext->wsaBuf.buf);
+		printf("%4d-%02d-%02d %02d:%02d:%02d.%03d:Recv data: %s from client :%d \n", 
+		sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds, ioContext->wsaBuf.buf,sockContext->connSocket);
 	}
 	// 写操作完成
 	void OnSendCompleted(SocketContext *sockContext, IOContext *ioContext)
